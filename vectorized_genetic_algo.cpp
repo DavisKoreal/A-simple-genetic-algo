@@ -13,6 +13,7 @@ int vectorlenght = 15;
 const int SAMPLE_SIZE = 1000;
 double defaultforMaxAcc = 9999;
 const int NUM = 10000;
+const double allowederror = 0.00005;
 int numberofGenerations = 100;
 std::vector<double> independent_variables = {};
 
@@ -45,14 +46,14 @@ public:
 
         return result;
     }
+
     void fitness()
     {
-
         double ans = runInference() - true_value;
         rank = (ans == 0) ? defaultforMaxAcc : std::abs(1 / ans);
     }
 
-    void mutateTopSolutions(std::random_device& device, std::uniform_real_distribution<double> m)
+    void mutateTopSolutions(std::random_device &device, std::uniform_real_distribution<double> m)
     {
         for (int i = 0; i < vectorlenght; i++)
         {
@@ -92,17 +93,18 @@ std::vector<double> crossDevice(std::uniform_int_distribution<int> cross, std::r
 int main()
 {
     std::ofstream log_file("genetic_algo_log.txt", std::ios::app);
-    if (!log_file.is_open()) {
+    if (!log_file.is_open())
+    {
         std::cerr << "Failed to open log file\n";
         return 1;
     }
-    auto get_timestamp = []() {
+    auto get_timestamp = []()
+    {
         std::time_t now = std::time(nullptr);
         char buf[20];
         std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
         return std::string(buf);
     };
-{
 
     for (int i = 0; i < vectorlenght; i++)
     {
@@ -115,9 +117,8 @@ int main()
     std::vector<Solution> solutions;
 
     // creating initial random Solutions and storing them in Solutions
+    int generation = 0;
     for (int i = 0; i < NUM; i++)
-generation++;
-    log_file << get_timestamp() << " Completed generation " << generation << "\n";
     {
         double initialrank = 0;
         std::vector<double> coef = {};
@@ -129,12 +130,16 @@ generation++;
         solutions.push_back(v);
     }
 
-    int generation = 0;
-log_file << get_timestamp() << " Starting generation " << generation << "\n";
+    log_file << get_timestamp() << " Starting generation " << generation << "\n";
 
     while (generation < numberofGenerations)
     {
-
+        double error = 1 / solutions[0].rank;
+        if (error < allowederror)
+        {
+            log_file << "\n --------------------- \n We are within reasonable error \n\n";
+            break;
+        }
         // running our fitness function for every solution
         for (auto &s : solutions)
         {
@@ -154,25 +159,23 @@ log_file << get_timestamp() << " Starting generation " << generation << "\n";
         std::for_each(
             solutions.begin(),
             solutions.begin() + 20,
-            [](const auto &s)
+            [&log_file, &get_timestamp](const auto &s)
             {
                 std::cout << s.rank << " ";
-                // std::cout << s.rank << std::endl;
-                log_file << get_timestamp() << " Top solution rank: " << s.rank << " coefficients: [ ";
-                for (int i = 0; i < ; i++) {
+                s.showCoefficients();
+
+                log_file << get_timestamp() << " solution error: " << 1 / s.rank << " coefficients: [ ";
+                for (int i = 0; i < vectorlenght; i++)
+                {
                     log_file << s.coefficients[i] << ", ";
                 }
                 log_file << "]\n";
-                s.showCoefficients();
-            }
-
-        );
+            });
 
         std::cout << "..." << std::endl
                   << std::endl;
 
         // copy the top 1000 solutions into the sample size
-
         std::vector<Solution> sample;
         std::copy(
             solutions.begin(),
@@ -181,9 +184,8 @@ log_file << get_timestamp() << " Starting generation " << generation << "\n";
         solutions.clear();
 
         // mutate the top solutions by %
-
         std::uniform_real_distribution<double> m(0.90, 1.10);
-log_file << get_timestamp() << " Mutating top solutions\n";
+        log_file << get_timestamp() << " Mutating top solutions\n";
         std::for_each(
             sample.begin(),
             sample.end(),
@@ -193,14 +195,24 @@ log_file << get_timestamp() << " Mutating top solutions\n";
             });
 
         // crossing over
-
         std::uniform_int_distribution<int> cross(0, SAMPLE_SIZE - 1);
-log_file << get_timestamp() << " Performing crossover\n";
+        log_file << get_timestamp() << " Performing crossover\n";
         for (int i = 0; i < NUM; i++)
-generation++;
-    log_file << get_timestamp() << " Completed generation " << generation << "\n";
         {
             solutions.push_back(Solution(0, crossDevice(cross, device, sample)));
         }
+
+        generation++;
+        log_file << get_timestamp() << " Completed generation " << generation << "\n";
     }
+
+    log_file << "\n\n INDEPENDENT VARIABLES\n  [ ";
+    for (int i = 0; i < vectorlenght; i++)
+    {
+        log_file << independent_variables[i] << " ";
+    }
+    log_file << " ]";
+
+    log_file.close();
+    return 0;
 }
