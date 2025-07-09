@@ -139,7 +139,7 @@ int main()
         if (error < allowederror)
         {
             log_file << "\n --------------------- \n We are within reasonable error \n\n";
-            break;
+            return 0;
         }
         // running our fitness function for every solution
         for (auto &s : solutions)
@@ -214,22 +214,35 @@ int main()
     }
     log_file << " ]";
 
-    results_file << get_timestamp() << "Final generation results are following: " << "\n";
-    results_file << "Independent Variables: [ ";
+    results_file << get_timestamp() << " Final generation results are following: " << "\n";
+    results_file << " Independent Variables: [ ";
     for (int i = 0; i < vectorlenght; i++)
     {
         results_file << independent_variables[i] << ", ";
     }
     results_file << "]\n";
-    
-    
+
+    for (auto &s : solutions)
+    {
+        s.fitness();
+    }
+
+    // sort solutions by rank
+    std::sort(
+        solutions.begin(),
+        solutions.end(),
+        [](const auto &lhs, const auto &rhs)
+        {
+            return lhs.rank > rhs.rank;
+        });
+
     int recorded_solutions = 0;
     for (const auto &s : solutions)
     {
         if (recorded_solutions >= 20)
             break;
         double infValue = s.runInference();
-        results_file << "Inference " << infValue << "Error: " << true_value - infValue << " Coefficients: [ ";
+        results_file << get_timestamp() << " Inference " << infValue << " Error: " << true_value - infValue << " Coefficients: [ ";
         for (int i = 0; i < vectorlenght; i++)
         {
             results_file << s.coefficients[i] << ", ";
