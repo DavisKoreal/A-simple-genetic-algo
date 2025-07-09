@@ -13,7 +13,7 @@ int vectorlenght = 15;
 const int SAMPLE_SIZE = 1000;
 double defaultforMaxAcc = 9999;
 const int NUM = 10000;
-const double allowederror = 0.00005;
+const double allowederror = 0.005;
 int numberofGenerations = 100;
 std::vector<double> independent_variables = {};
 
@@ -29,7 +29,7 @@ public:
         coefficients = coeff;
     }
 
-    double runInference()
+    double runInference() const
     {
         double coefficientsSize = coefficients.size();
         double independentVarSize = independent_variables.size();
@@ -93,6 +93,7 @@ std::vector<double> crossDevice(std::uniform_int_distribution<int> cross, std::r
 int main()
 {
     std::ofstream log_file("genetic_algo_log.txt", std::ios::app);
+    std::ofstream results_file("genetic_algo_results.txt", std::ios::app);
     if (!log_file.is_open())
     {
         std::cerr << "Failed to open log file\n";
@@ -213,6 +214,31 @@ int main()
     }
     log_file << " ]";
 
+    results_file << get_timestamp() << "Final generation results are following: " << "\n";
+    results_file << "Independent Variables: [ ";
+    for (int i = 0; i < vectorlenght; i++)
+    {
+        results_file << independent_variables[i] << ", ";
+    }
+    results_file << "]\n";
+    
+    
+    int recorded_solutions = 0;
+    for (const auto &s : solutions)
+    {
+        if (recorded_solutions >= 20)
+            break;
+        double infValue = s.runInference();
+        results_file << "Inference " << infValue << "Error: " << true_value - infValue << " Coefficients: [ ";
+        for (int i = 0; i < vectorlenght; i++)
+        {
+            results_file << s.coefficients[i] << ", ";
+        }
+        results_file << "]\n";
+        recorded_solutions += 1;
+    }
+
     log_file.close();
+    results_file.close();
     return 0;
 }
